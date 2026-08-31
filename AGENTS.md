@@ -5,11 +5,13 @@
 
 ## What This Repo Does
 
-A real use case built with Solari for the Pinetree SWE intern application: a cloud-browser pricing extractor that collects tiered SaaS plans and writes them to CSV.
+A real use case built with Solari for the Pinetree SWE intern application: a cloud browser plus headless sandbox pipeline that collects a SaaS pricing page, parses it in an isolated sandbox, and writes structured CSV/JSON.
 
 ## Key Files
 
-- `main.py` — pricing extractor entry point
+- `main.py` — pricing reporter entry point
+- `parser.py` — in-sandbox HTML-to-CSV/JSON parser
+- `tests/test_parser.py` — local parser tests
 - `requirements.txt` — Python dependencies
 - `.env.example` — env var template
 
