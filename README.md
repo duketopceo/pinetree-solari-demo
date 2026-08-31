@@ -1,4 +1,4 @@
-# pinetree
+# pinetree-solari-demo
 
 > Pinetree SWE intern application: a real Solari use case that extracts a SaaS pricing page and exports the results to CSV.
 
@@ -19,8 +19,8 @@ the same script can be pointed at any SaaS pricing page.
 ## Local Setup
 ```bash
 # clone
-git clone https://github.com/duketopceo/pinetree
-cd pinetree
+git clone https://github.com/duketopceo/pinetree-solari-demo
+cd pinetree-solari-demo
 
 # install deps
 pip install -r requirements.txt

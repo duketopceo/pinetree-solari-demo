@@ -1,4 +1,4 @@
-# AGENTS.md — pinetree
+# AGENTS.md — pinetree-solari-demo
 
 > This file is the agent entry point for this repo.
 > Full agent context lives at: https://github.com/duketopceo/luke-agents
