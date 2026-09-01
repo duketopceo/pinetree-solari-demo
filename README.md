@@ -25,6 +25,8 @@ plans. The captured output is stored in `OUTPUTS.md` and in this repository:
 - `pricing.csv` — spreadsheet-ready, features joined with ` | `
 - `pricing.json` — structured, features as arrays
 
+![run output](assets/run-screenshot.png)
+
 ## Stack
 
 - Python 3.11+

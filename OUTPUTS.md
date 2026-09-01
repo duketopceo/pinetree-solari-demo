@@ -3,6 +3,8 @@
 This is the exact result of a verified end-to-end run against
 `https://getsolari.com/pricing` on the Solari Free plan.
 
+![run output](assets/run-screenshot.png)
+
 ## Command
 
 ```bash
