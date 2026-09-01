@@ -51,6 +51,12 @@ Targets are configured in `sites.json`. Each entry can use either `"mode": "card
 with CSS class selectors or `"mode": "heading"` for a generic `h2`/`h3` + price
 + list-item heuristic.
 
+## Cross-platform
+
+The project is pure Python and uses only `solari-browser`, `solari-sandbox`, and
+the standard library. It runs on macOS, Windows, and Linux as long as Python
+3.11+ is available.
+
 ## Tests
 
 The parser is tested locally against sample HTML, no Solari API key needed:

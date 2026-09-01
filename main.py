@@ -99,13 +99,7 @@ async def _process_site(
 
     print(result.stdout.strip())
 
-    csv_bytes = await sandbox.files.download(f"/tmp/{name}.csv")
     json_bytes = await sandbox.files.download(f"/tmp/{name}.json")
-
-    local_csv = f"/tmp/{name}_local.csv"
-    local_json = f"/tmp/{name}_local.json"
-    Path(local_csv).write_bytes(csv_bytes)
-    Path(local_json).write_bytes(json_bytes)
 
     data = json.loads(json_bytes.decode("utf-8"))
     return data.get("plans", [])
