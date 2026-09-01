@@ -25,7 +25,7 @@ combined result is in `OUTPUTS.md` and in this repository:
 - `pricing.csv` — spreadsheet-ready, features joined with ` | `
 - `pricing.json` — structured, features as arrays
 
-![run output](assets/run-screenshot.png)
+![live output](assets/social-screenshot.png)
 
 ## Stack
 

@@ -4,7 +4,7 @@ This is the exact result of a verified end-to-end multi-URL run on the Solari
 Free plan, collecting `https://getsolari.com/pricing` and
 `https://linear.app/pricing`.
 
-![run output](assets/run-screenshot.png)
+![live output](assets/social-screenshot.png)
 
 ## Command
 
