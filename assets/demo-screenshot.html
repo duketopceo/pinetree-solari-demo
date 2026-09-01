@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pinetree x Solari — Multi-URL Pricing Reporter</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #15161d;
+      --text: #e5e6eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --border: #2e3038;
+      --solari: #a78bfa;
+      --linear: #34d399;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 48px 32px;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    h1 { margin: 0 0 8px; font-size: 1.7rem; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin: 0; }
+    .badges { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .badge {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: var(--accent);
+    }
+    .arch {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 24px 0;
+      font-size: 0.9rem;
+    }
+    .arch .box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 6px;
+      flex: 1;
+      text-align: center;
+    }
+    .arch .arrow { color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--panel); color: var(--accent); font-weight: 600; }
+    .site-solari { color: var(--solari); font-weight: 600; }
+    .site-linear { color: var(--linear); font-weight: 600; }
+    .features { color: var(--muted); }
+    .links { margin-top: 32px; font-size: 0.85rem; color: var(--muted); }
+    .links a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Pinetree x Solari — Multi-URL Pricing Reporter</h1>
+      <p class="subtitle">
+        Built with Devin for the Pinetree $300K SWE intern challenge.<br />
+        A Solari cloud browser loads multiple pricing pages, a sandbox parses each one, and the host writes a combined CSV + JSON.
+      </p>
+      <div class="badges">
+        <span class="badge">@harrychow_</span>
+        <span class="badge">@getsolari</span>
+        <span class="badge">solari-browser</span>
+        <span class="badge">solari-sandbox</span>
+      </div>
+    </header>
+
+    <div class="arch">
+      <div class="box">Solari Browser</div>
+      <div class="arrow">→</div>
+      <div class="box">Solari Sandbox</div>
+      <div class="arrow">→</div>
+      <div class="box">Combined CSV / JSON</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Site</th>
+          <th>Plan</th>
+          <th>Price</th>
+          <th>Key features</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+
+    <div class="links">
+      <p>
+        Repo: <a href="https://github.com/duketopceo/pinetree-solari-demo">github.com/duketopceo/pinetree-solari-demo</a><br />
+        Upstream PR: <a href="https://github.com/solari-sdk/solari-cookbook/pull/3">solari-sdk/solari-cookbook#3</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const data = {
+  "plans": [
+    {
+      "site": "solari",
+      "plan": "Free",
+      "price": "$0 / month",
+      "description": "Explore Solari and prototype your first agent.",
+      "features": [
+        "+ Included credits to start building",
+        "+ 3 concurrent browsers",
+        "+ 1 sandbox or desktop",
+        "+ 1-hour maximum session",
+        "+ 1-day replay retention"
+      ]
+    },
+    {
+      "site": "solari",
+      "plan": "Starter",
+      "price": "$20 / month",
+      "description": "Build and launch with a small team.",
+      "features": [
+        "+ 33% cheaper agent runtime",
+        "+ 20 concurrent browsers",
+        "+ 2 sandboxes or desktops",
+        "+ 5-hour maximum session",
+        "+ Stealth mode included"
+      ]
+    },
+    {
+      "site": "solari",
+      "plan": "Professional",
+      "price": "$200 / month",
+      "description": "Scale production agent workloads.",
+      "features": [
+        "+ 53% cheaper agent runtime",
+        "+ 150 concurrent browsers",
+        "+ 10 sandboxes or desktops",
+        "+ 24-hour maximum session",
+        "+ Best self-serve rates"
+      ]
+    },
+    {
+      "site": "solari",
+      "plan": "Enterprise",
+      "price": "Custom",
+      "description": "Run mission-critical agents at any scale.",
+      "features": [
+        "+ 67% cheaper agent runtime",
+        "+ 150+ concurrent browsers",
+        "+ 50+ sandboxes or desktops",
+        "+ Unlimited session duration",
+        "+ HIPAA compliance"
+      ]
+    },
+    {
+      "site": "linear",
+      "plan": "Free",
+      "price": "$0",
+      "description": "Free for everyone",
+      "features": [
+        "Unlimited members",
+        "2 teams",
+        "250 issues",
+        "Agent platform",
+        "Linear Agent"
+      ]
+    },
+    {
+      "site": "linear",
+      "plan": "Basic",
+      "price": "$10",
+      "description": "Billed yearly",
+      "features": [
+        "All Free features +",
+        "5 teams",
+        "Unlimited issues",
+        "Unlimited file uploads",
+        "Admin roles"
+      ]
+    },
+    {
+      "site": "linear",
+      "plan": "Business",
+      "price": "$16",
+      "description": "Billed yearly",
+      "features": [
+        "All Basic features +",
+        "Unlimited teams",
+        "Private teams and guests",
+        "Triage Intelligence",
+        "Loops",
+        "Code Intelligence",
+        "Linear Insights",
+        "Linear Asks",
+        "Zendesk and Intercom integrations"
+      ]
+    },
+    {
+      "site": "linear",
+      "plan": "Enterprise",
+      "price": "Custom",
+      "description": "Annual billing only",
+      "features": [
+        "All Business features +",
+        "Invoice/PO billing",
+        "SAML and SCIM",
+        "Granular admin controls",
+        "Enterprise-grade security",
+        "Advanced org modeling",
+        "Migration & onboarding support",
+        "Priority support",
+        "Account management"
+      ]
+    }
+  ]
+};
+    const tbody = document.getElementById('table-body');
+    data.plans.forEach(p => {
+      const cls = p.site === 'solari' ? 'site-solari' : 'site-linear';
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="${cls}">${p.site}</td>
+        <td>${p.plan}</td>
+        <td>${p.price}</td>
+        <td class="features">${p.features.slice(0, 4).join(' · ')}${p.features.length > 4 ? ' …' : ''}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  </script>
+</body>
+</html>
