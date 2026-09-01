@@ -1,3 +1,7 @@
-loaded: Solari
-WROTE {'csv': '/tmp/pricing.csv', 'json': '/tmp/pricing.json', 'plans': 4}
+[solari] loading https://getsolari.com/pricing
+[solari] title: Solari
+WROTE {'csv': '/tmp/solari.csv', 'json': '/tmp/solari.json', 'plans': 4, 'site': 'solari'}
+[linear] loading https://linear.app/pricing
+[linear] title: Pricing – Linear
+WROTE {'csv': '/tmp/linear.csv', 'json': '/tmp/linear.json', 'plans': 4, 'site': 'linear'}
 wrote pricing.csv and pricing.json

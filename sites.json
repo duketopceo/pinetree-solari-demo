@@ -1,0 +1,19 @@
+[
+  {
+    "site": "solari",
+    "url": "https://getsolari.com/pricing",
+    "mode": "card",
+    "card_class": "solari-pricing-plan",
+    "name_class": "solari-pricing-plan-name",
+    "price_class": "solari-pricing-price-value",
+    "suffix_class": "solari-pricing-price-suffix",
+    "description_class": "solari-pricing-description",
+    "features_class": "solari-pricing-feature"
+  },
+  {
+    "site": "linear",
+    "url": "https://linear.app/pricing",
+    "mode": "heading",
+    "heading_tags": "h3"
+  }
+]

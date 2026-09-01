@@ -1,25 +1,39 @@
-"""Pricing reporter — collect a pricing page in a Solari browser,
-parse it in a Solari sandbox, and write CSV/JSON on the host.
-
-This demonstrates a real web-data-extraction pipeline across two Solari
-primitives: cloud browser and headless sandbox.
+"""Pricing reporter — collect pricing pages from several SaaS sites in a
+Solari browser, parse each one in a Solari sandbox, and write a combined
+CSV and JSON on the host.
 """
 
 import asyncio
+import csv
+import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from solari_browser import Solari
 from solari_sandbox import SandboxClient
 
-DEFAULT_TARGET = "https://getsolari.com/pricing"
 DEFAULT_BASE_URL = "https://api.getsolari.com"
 PARSER_SCRIPT = Path(__file__).with_name("parser.py")
+SITES_FILE = Path("sites.json")
 
 
-def _class_env(prefix: str, default: str) -> str:
-    return os.environ.get(prefix, default)
+def _load_sites() -> list[dict[str, Any]]:
+    path = Path(os.environ.get("SITES_FILE", SITES_FILE))
+    if not path.is_file():
+        print(f"error: sites config not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    raw = path.read_text(encoding="utf-8")
+    try:
+        sites = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(f"error: invalid sites JSON: {exc}", file=sys.stderr)
+        sys.exit(1)
+    if not isinstance(sites, list) or not sites:
+        print("error: sites.json must be a non-empty list", file=sys.stderr)
+        sys.exit(1)
+    return sites
 
 
 def _require_env(name: str) -> str:
@@ -30,19 +44,97 @@ def _require_env(name: str) -> str:
     return value
 
 
-async def main() -> None:
-    api_key = _require_env("SOLARI_API_KEY")
-    base_url = os.environ.get("SOLARI_BASE_URL", DEFAULT_BASE_URL)
-    target_url = os.environ.get("TARGET_URL", DEFAULT_TARGET)
+def _env_for_site(site: dict[str, Any]) -> dict[str, str]:
+    env = {
+        "SITE_NAME": site["site"],
+        "PARSER_MODE": site.get("mode", "card"),
+        "PRICING_HTML_PATH": f"/tmp/{site['site']}.html",
+        "PRICING_CSV_PATH": f"/tmp/{site['site']}.csv",
+        "PRICING_JSON_PATH": f"/tmp/{site['site']}.json",
+    }
+    if env["PARSER_MODE"] == "heading":
+        env["HEADING_TAGS"] = site.get("heading_tags", "h2,h3")
+    else:
+        for key in (
+            "card_class",
+            "name_class",
+            "price_class",
+            "suffix_class",
+            "description_class",
+            "features_class",
+        ):
+            env_key = key.upper()
+            env[env_key] = site.get(key, os.environ.get(env_key, ""))
+    return env
+
+
+async def _process_site(
+    page,
+    sandbox,
+    site: dict[str, Any],
+) -> list[dict[str, Any]]:
+    name = site["site"]
+    url = site["url"]
+
+    print(f"[{name}] loading {url}")
+    await page.goto(url)
+    await page.wait_for_load_state("networkidle")
+
+    title = await page.title()
+    print(f"[{name}] title: {title}")
+
+    html = await page.content()
+    html_path = f"/tmp/{name}.html"
+    await sandbox.files.upload(html_path, html)
+
+    parser_env = _env_for_site(site)
+    await sandbox.env(parser_env)
+
+    result = await sandbox.commands.run(
+        "python3", args=["/tmp/parser.py"], timeout_ms=120_000
+    )
+    if result.exitCode != 0:
+        print(f"[{name}] parser stderr: {result.stderr}", file=sys.stderr)
+        raise RuntimeError(f"{name} parser failed with exit code {result.exitCode}")
+
+    print(result.stdout.strip())
+
+    csv_bytes = await sandbox.files.download(f"/tmp/{name}.csv")
+    json_bytes = await sandbox.files.download(f"/tmp/{name}.json")
+
+    local_csv = f"/tmp/{name}_local.csv"
+    local_json = f"/tmp/{name}_local.json"
+    Path(local_csv).write_bytes(csv_bytes)
+    Path(local_json).write_bytes(json_bytes)
+
+    data = json.loads(json_bytes.decode("utf-8"))
+    return data.get("plans", [])
+
+
+def _write_combined(plans: list[dict[str, Any]]) -> None:
     output_csv = os.environ.get("OUTPUT_CSV", "pricing.csv")
     output_json = os.environ.get("OUTPUT_JSON", "pricing.json")
 
-    card_class = _class_env("CARD_CLASS", "solari-pricing-plan")
-    name_class = _class_env("NAME_CLASS", "solari-pricing-plan-name")
-    price_class = _class_env("PRICE_CLASS", "solari-pricing-price-value")
-    suffix_class = _class_env("SUFFIX_CLASS", "solari-pricing-price-suffix")
-    description_class = _class_env("DESCRIPTION_CLASS", "solari-pricing-description")
-    features_class = _class_env("FEATURES_CLASS", "solari-pricing-feature")
+    with open(output_json, "w", encoding="utf-8") as f:
+        json.dump({"plans": plans}, f, indent=2)
+
+    with open(output_csv, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["site", "plan", "price", "description", "features"]
+        )
+        writer.writeheader()
+        for plan in plans:
+            row = dict(plan)
+            row["features"] = " | ".join(plan["features"])
+            writer.writerow(row)
+
+    print(f"wrote {output_csv} and {output_json}")
+
+
+async def main() -> None:
+    api_key = _require_env("SOLARI_API_KEY")
+    base_url = os.environ.get("SOLARI_BASE_URL", DEFAULT_BASE_URL)
+    sites = _load_sites()
 
     if not PARSER_SCRIPT.is_file():
         print(f"error: parser script not found: {PARSER_SCRIPT}", file=sys.stderr)
@@ -53,56 +145,27 @@ async def main() -> None:
     sandbox = None
     sb_client = SandboxClient(api_key=api_key, base_url=base_url)
 
+    all_plans: list[dict[str, Any]] = []
+
     try:
         solari = Solari(api_key=api_key)
         browser = await solari.launch()
-        page = await browser.new_page()
-        await page.goto(target_url)
-        await page.wait_for_load_state("networkidle")
-
-        title = await page.title()
-        print(f"loaded: {title}")
-
-        html = await page.content()
-
         sandbox = await sb_client.create(template="base")
         await sandbox.connect()
 
         parser_code = PARSER_SCRIPT.read_text(encoding="utf-8")
-
         await sandbox.files.upload("/tmp/parser.py", parser_code)
-        await sandbox.files.upload("/tmp/pricing.html", html)
 
-        await sandbox.env(
-            {
-                "CARD_CLASS": card_class,
-                "NAME_CLASS": name_class,
-                "PRICE_CLASS": price_class,
-                "SUFFIX_CLASS": suffix_class,
-                "DESCRIPTION_CLASS": description_class,
-                "FEATURES_CLASS": features_class,
-                "PRICING_HTML_PATH": "/tmp/pricing.html",
-                "PRICING_CSV_PATH": "/tmp/pricing.csv",
-                "PRICING_JSON_PATH": "/tmp/pricing.json",
-            }
-        )
+        page = await browser.new_page()
 
-        result = await sandbox.commands.run(
-            "python3", args=["/tmp/parser.py"], timeout_ms=120_000
-        )
-        if result.exitCode != 0:
-            print("sandbox parser stderr:", result.stderr, file=sys.stderr)
-            raise RuntimeError(f"sandbox parser failed with exit code {result.exitCode}")
+        for site in sites:
+            try:
+                plans = await _process_site(page, sandbox, site)
+                all_plans.extend(plans)
+            except Exception as exc:
+                print(f"[{site['site']}] failed: {exc}", file=sys.stderr)
 
-        print(result.stdout.strip())
-
-        csv_bytes = await sandbox.files.download("/tmp/pricing.csv")
-        json_bytes = await sandbox.files.download("/tmp/pricing.json")
-
-        Path(output_csv).write_bytes(csv_bytes)
-        Path(output_json).write_bytes(json_bytes)
-
-        print(f"wrote {output_csv} and {output_json}")
+        _write_combined(all_plans)
     finally:
         if sandbox is not None:
             try:
