@@ -7,23 +7,35 @@ primitives: cloud browser and headless sandbox.
 
 import asyncio
 import os
+import sys
+from pathlib import Path
 
 from solari_browser import Solari
 from solari_sandbox import SandboxClient
 
 DEFAULT_TARGET = "https://getsolari.com/pricing"
 DEFAULT_BASE_URL = "https://api.getsolari.com"
-PARSER_SCRIPT = os.path.join(os.path.dirname(__file__), "parser.py")
+PARSER_SCRIPT = Path(__file__).with_name("parser.py")
 
 
 def _class_env(prefix: str, default: str) -> str:
     return os.environ.get(prefix, default)
 
 
+def _require_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        print(f"error: {name} is required. See .env.example", file=sys.stderr)
+        sys.exit(1)
+    return value
+
+
 async def main() -> None:
-    api_key = os.environ["SOLARI_API_KEY"]
+    api_key = _require_env("SOLARI_API_KEY")
     base_url = os.environ.get("SOLARI_BASE_URL", DEFAULT_BASE_URL)
     target_url = os.environ.get("TARGET_URL", DEFAULT_TARGET)
+    output_csv = os.environ.get("OUTPUT_CSV", "pricing.csv")
+    output_json = os.environ.get("OUTPUT_JSON", "pricing.json")
 
     card_class = _class_env("CARD_CLASS", "solari-pricing-plan")
     name_class = _class_env("NAME_CLASS", "solari-pricing-plan-name")
@@ -32,12 +44,17 @@ async def main() -> None:
     description_class = _class_env("DESCRIPTION_CLASS", "solari-pricing-description")
     features_class = _class_env("FEATURES_CLASS", "solari-pricing-feature")
 
-    solari = Solari(api_key=api_key)
+    if not PARSER_SCRIPT.is_file():
+        print(f"error: parser script not found: {PARSER_SCRIPT}", file=sys.stderr)
+        sys.exit(1)
+
+    solari: Solari | None = None
     browser = None
     sandbox = None
     sb_client = SandboxClient(api_key=api_key, base_url=base_url)
 
     try:
+        solari = Solari(api_key=api_key)
         browser = await solari.launch()
         page = await browser.new_page()
         await page.goto(target_url)
@@ -51,8 +68,7 @@ async def main() -> None:
         sandbox = await sb_client.create(template="base")
         await sandbox.connect()
 
-        with open(PARSER_SCRIPT, "r", encoding="utf-8") as f:
-            parser_code = f.read()
+        parser_code = PARSER_SCRIPT.read_text(encoding="utf-8")
 
         await sandbox.files.upload("/tmp/parser.py", parser_code)
         await sandbox.files.upload("/tmp/pricing.html", html)
@@ -75,7 +91,7 @@ async def main() -> None:
             "python3", args=["/tmp/parser.py"], timeout_ms=120_000
         )
         if result.exitCode != 0:
-            print("sandbox parser stderr:", result.stderr)
+            print("sandbox parser stderr:", result.stderr, file=sys.stderr)
             raise RuntimeError(f"sandbox parser failed with exit code {result.exitCode}")
 
         print(result.stdout.strip())
@@ -83,15 +99,10 @@ async def main() -> None:
         csv_bytes = await sandbox.files.download("/tmp/pricing.csv")
         json_bytes = await sandbox.files.download("/tmp/pricing.json")
 
-        local_csv = os.environ.get("OUTPUT_CSV", "pricing.csv")
-        local_json = os.environ.get("OUTPUT_JSON", "pricing.json")
+        Path(output_csv).write_bytes(csv_bytes)
+        Path(output_json).write_bytes(json_bytes)
 
-        with open(local_csv, "wb") as f:
-            f.write(csv_bytes)
-        with open(local_json, "wb") as f:
-            f.write(json_bytes)
-
-        print(f"wrote {local_csv} and {local_json}")
+        print(f"wrote {output_csv} and {output_json}")
     finally:
         if sandbox is not None:
             try:
@@ -107,7 +118,12 @@ async def main() -> None:
                 await browser.close()
             except Exception:
                 pass
-        await solari.close()
+        if solari is not None:
+            try:
+                await solari.close()
+            except Exception:
+                pass
+        await sb_client.aclose()
 
 
 if __name__ == "__main__":

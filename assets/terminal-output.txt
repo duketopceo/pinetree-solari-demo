@@ -1,0 +1,3 @@
+loaded: Solari
+WROTE {'csv': '/tmp/pricing.csv', 'json': '/tmp/pricing.json', 'plans': 4}
+wrote pricing.csv and pricing.json
