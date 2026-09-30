@@ -10,3 +10,5 @@ build/
 *.log
 .vscode/
 .venv/
+
+.codebase-memory/
