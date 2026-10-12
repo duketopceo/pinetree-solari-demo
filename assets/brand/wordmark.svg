@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 64" width="420" height="64" role="img" aria-label="pinetree-solari-demo (proposal)">
+  <rect width="64" height="64" rx="12" fill="#1F5A41"/>
+  <path d="M32 9 L45 25 H38 L48 38 H37 L52 53 H12 L27 38 H16 L26 25 H19 Z" fill="#F6F8F4"/>
+  <rect x="29" y="53" width="6" height="5" fill="#F6F8F4"/>
+  <circle cx="32" cy="35" r="3.2" fill="#1F5A41"/>
+  <text x="80" y="29" font-family="Noto Sans Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="24" font-weight="700" fill="#14231C">pinetree-solari</text>
+  <text x="80" y="52" font-family="Noto Sans Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#5B6B62">demo / pricing ledger</text>
+</svg>

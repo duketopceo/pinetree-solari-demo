@@ -1,79 +1,75 @@
-# pinetree-solari-demo
+<p align="center"><img src="assets/brand/wordmark.svg" alt="pinetree-solari-demo" width="420"></p>
 
-A real Solari use case built for the Pinetree Research SWE intern application.
+Collects SaaS pricing pages in a Solari cloud browser, parses them in a Solari sandbox, and writes one combined `pricing.csv` and `pricing.json`.
 
-It shows a multi-URL browser-to-sandbox pipeline that collects live SaaS pricing
-pages, parses each one in an isolated headless sandbox, and writes a combined
-CSV and JSON on the host.
-
-## What it demonstrates
-
-1. **Cloud browser** — a single Solari browser loads each configured pricing
-   page one after another.
-2. **Headless sandbox** — each page's HTML and a shared parser are uploaded to
-   a sandbox, which extracts tiered plans.
-3. **Two parsing modes** — a class-based mode for modern React pricing cards and
-   a heading-based heuristic mode for conventional pricing pages.
-4. **Combined output** — the host merges all per-site `pricing.csv`/`pricing.json`
-   files into a single `pricing.csv` and `pricing.json`.
-
-## Live run output
-
-A verified run collected Solari and Linear pricing on the Solari Free plan. The
-combined result is in `OUTPUTS.md` and in this repository:
-
-- `pricing.csv` — spreadsheet-ready, features joined with ` | `
-- `pricing.json` — structured, features as arrays
+Built as a demo for the Pinetree Research SWE intern application. It is an example pipeline, not a production monitor. (Logo is a proposal, see `assets/brand/`.)
 
 ![live output](assets/social-screenshot.png)
 
-## Stack
+## How it works
 
-- Python 3.11+
-- `solari-browser`
-- `solari-sandbox`
-- Pure standard-library HTML parser (`html.parser`)
+```mermaid
+flowchart LR
+  S[sites.json] --> M[main.py]
+  M -->|page.goto, page.content| B[Solari browser]
+  M -->|upload HTML + parser.py| X[Solari sandbox]
+  X -->|python3 parser.py -> JSON| M
+  M --> O[pricing.csv + pricing.json]
+```
 
-## Local setup
+1. `main.py` reads `sites.json` and opens one Solari browser session and one sandbox.
+2. For each site it loads the URL, waits for `networkidle`, and uploads the HTML to the sandbox.
+3. `parser.py` runs there (standard library `html.parser` only) in one of two modes: `card` (CSS class selectors) or `heading` (`h2`/`h3` + price + list-item heuristic).
+4. The host downloads each site's JSON and merges all plans into `pricing.csv` (features joined with ` | `) and `pricing.json` (features as arrays).
+5. A failing site is logged to stderr and skipped; the browser and sandbox are always closed at the end.
+
+Captured output from a verified run on the Solari Free plan (Solari and Linear, 4 plans each) is in [`OUTPUTS.md`](OUTPUTS.md), with the sample `pricing.csv` / `pricing.json` in this repo.
+
+## Install
+
+Python 3.11+.
 
 ```bash
 git clone https://github.com/duketopceo/pinetree-solari-demo
 cd pinetree-solari-demo
-pip install -r requirements.txt
-cp .env.example .env
-# fill in .env
+pip install -r requirements.txt   # solari-browser, solari-sandbox
+cp .env.example .env              # set SOLARI_API_KEY
+```
+
+## Run
+
+```bash
 python main.py
 ```
 
-## Sites
+Optional environment variables read by the code: `SOLARI_BASE_URL`, `SITES_FILE` (default `sites.json`), `OUTPUT_CSV` (default `pricing.csv`), `OUTPUT_JSON` (default `pricing.json`).
 
-Targets are configured in `sites.json`. Each entry can use either `"mode": "card"`
-with CSS class selectors or `"mode": "heading"` for a generic `h2`/`h3` + price
-+ list-item heuristic.
+## Configure sites
 
-## Cross-platform
+`sites.json` is a list. Each entry has `site`, `url`, and `mode`:
 
-The project is pure Python and uses only `solari-browser`, `solari-sandbox`, and
-the standard library. It runs on macOS, Windows, and Linux as long as Python
-3.11+ is available.
+- `"mode": "card"` with `card_class`, `name_class`, `price_class`, `suffix_class`, `description_class`, `features_class`.
+- `"mode": "heading"` with `heading_tags` (default `h2,h3`).
 
 ## Tests
 
-The parser is tested locally against sample HTML, no Solari API key needed:
+No API key needed:
 
 ```bash
-python -m unittest discover tests
+python -m unittest discover -s tests -v
 ```
 
-## Cost
+CI runs the same command on push to `main` and on pull requests.
 
-Designed for the Solari Free plan. One browser session and one sandbox are
-started, used for all sites, then released before the script exits.
+## Status and roadmap
 
-## Upstream contribution
+Demo, in development; not deployed. See [`ROADMAP.md`](ROADMAP.md), [`DESIGN.md`](DESIGN.md) and [`docs/research/2026-10-10-landscape.md`](docs/research/2026-10-10-landscape.md). Known quirk: feature text currently keeps a leading `+ ` from the source pages.
 
-The simpler single-site example is proposed to the official Solari cookbook:
-https://github.com/solari-sdk/solari-cookbook/pull/3
+The simpler single-site example was proposed to the Solari cookbook: https://github.com/solari-sdk/solari-cookbook/pull/3
+
+## Contributing
+
+Issues and PRs welcome; keep changes small and run the tests first. Do not commit `.env` or API keys.
 
 ## License
 
